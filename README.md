@@ -1,5 +1,7 @@
 # xiaohongshu-auto-reply-skills
 
+[![bilibili](https://img.shields.io/badge/Bilibili-主页-00A1D6?logo=bilibili&logoColor=white)](https://space.bilibili.com/2250922)
+
 小红书垂直内容号「自动互动」通用工程框架（脱敏版）：**采集 → 语义筛选 → LLM 起草 → 发布验证 → 画像反哺** 全链路。
 
 与纯 Prompt 方法论不同，本仓库沉淀了一套可落地的**三层分离工程架构**，来自真实业务场景长期运行迭代，含完整状态机设计、实测风控红线与避坑清单。
