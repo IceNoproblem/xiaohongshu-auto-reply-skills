@@ -2,33 +2,37 @@
 
 [![bilibili](https://img.shields.io/badge/Bilibili-主页-00A1D6?logo=bilibili&logoColor=white)](https://space.bilibili.com/2250922)
 
-小红书垂直内容号「自动互动」通用工程框架（脱敏版）：**采集 → 语义筛选 → LLM 起草 → 发布验证 → 画像反哺** 全链路。
+小红书评论区做内容互动的工程骨架，脱敏版。
 
-与纯 Prompt 方法论不同，本仓库沉淀了一套可落地的**三层分离工程架构**，来自真实业务场景长期运行迭代，含完整状态机设计、实测风控红线与避坑清单。
+一条链路走完：**采集 → 语义筛选 → LLM 起草 → 发布验证 → 画像反哺**。
+
+不是讲方法论，是真跑出来的。三层分离、状态机、风控参数都是长跑迭代后的结果。
 
 > ⚠️ 脱敏说明：本仓库不含任何真实账号人设、城市、路径、话术与配置。请勿直接复制运行，仅作架构与方法论参考。使用前请阅读 [LICENSE](LICENSE) 与文末免责声明。
 
 ## 这是什么
 
-一个可复用的 AI Agent 技能（Skill）+ 工程骨架。面向「在垂直领域评论区做高质量内容互动、同时养号」的场景——**不是**批量引流营销，而是：
+一个技能包 + 工程骨架。用在垂直领域评论区做高质量互动、顺带养号——**不是**批量引流营销。
 
-1. 从推荐流/搜索采集候选笔记（纯机械去噪，不做语义判断）
-2. LLM Agent 逐条读帖判断「是否值得互动 + 属于什么内容等级」
-3. 按人设实时起草回复（读帖现写，模板仅兜底），人审/预览模式
-4. 发布后**以页面回显验证成功与否**，成功才落库
-5. 顺带做「画像投喂」：真人节奏浏览/点赞目标领域内容，反哺推荐算法
+干这五件事：
+
+1. 从推荐流 / 搜索采候选笔记（纯机械去噪，不做语义判断）
+2. LLM 逐条读帖，判断「值不值得互动 + 什么内容等级」
+3. 按人设实时起草（读帖现写，模板只兜底），人审 / 预览
+4. 发布后**看页面回显验证**，成功才落库
+5. 顺带画像投喂：真人节奏浏览点赞目标领域，反哺推荐算法
 
 ## 核心能力
 
 | 能力 | 说明 |
 |---|---|
-| 采集/执行/判断三层分离 | 机械层零依赖纯 Node；语义层交给 LLM Agent；互不耦合 |
-| 零依赖 CDP 客户端 | 基于 Node 内置 WebSocket/fetch，无 puppeteer/playwright |
-| 推荐流优先 + 搜索兜底 | 推荐流每轮 0 命中时低频搜索兜底，带风控冷却 |
-| 状态机三集合去重 | replied / seen / skipped 分离，窗口上限 + 防死锁超时 |
-| 发布成功验证 | 以评论区出现回复片段为准，杜绝误记成功 |
-| 画像投喂（养号） | 浏览停留 10-20s + 低频点赞，真人节奏 |
-| 频率安全参数表 | 实测红线，硬编码兜底，见 [references/risk-table.md](references/risk-table.md) |
+| 三层分离 | 机械层零依赖纯 Node，语义层给 LLM，执行层单独跑，互不耦合 |
+| 零依赖 CDP | 只用 Node 内置的 WebSocket 和 fetch，没有 puppeteer / playwright |
+| 推荐流优先 + 搜索兜底 | 推荐流某轮 0 命中就低频搜索兜底，带风控冷却 |
+| 状态机三集合 | replied / seen / skipped 分开，有窗口上限和防死锁超时 |
+| 发布成功验证 | 评论区出现回复片段才算成功，不靠返回值 |
+| 画像投喂 | 浏览停留 10-20s + 低频点赞，照真人节奏 |
+| 频率安全参数 | 实测红线，硬编码兜底，见 [references/risk-table.md](references/risk-table.md) |
 
 ## 架构
 
@@ -50,12 +54,14 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
-## 快速使用
+## 怎么用
 
-将本仓库放入 Agent 技能目录（如 `~/.claude/skills/`、Hermes `skills/`），用 SKILL.md 的触发词调用；机械层脚本按 [references/scripts/](references/scripts/) 骨架自行补全配置（需替换为**你自己的**人设/关键词/选择器/路径）。
+把仓库丢进 Agent 的技能目录（`~/.claude/skills/`、Hermes 的 `skills/` 都行），用 SKILL.md 里的触发词叫起来。
+
+机械层的脚本要自己补配置——人设、关键词、选择器、路径都得换成**你自己的**。骨架只给结构，不给内容。
 
 ```bash
-# 机械层（示例调度, 请按自身频率安全参数调整）
+# 机械层（示例调度，频率按你自己的安全参数调）
 node references/scripts/collect_skeleton.mjs          # 推荐流采集
 node references/scripts/collect_skeleton.mjs --search # 搜索兜底
 node references/scripts/feed_train_skeleton.mjs       # 画像投喂
@@ -63,19 +69,27 @@ node references/scripts/feed_train_skeleton.mjs       # 画像投喂
 node references/scripts/reply_skeleton.mjs "<详情URL>" "<回复文本>"
 ```
 
-## 目录结构
+## 目录
 
-- `SKILL.md` — Agent 技能定义（触发、执行流程、校验链、避坑清单）
+- `SKILL.md` — 技能定义（触发、流程、校验链、避坑清单）
 - `references/`
-  - `architecture.md` — 架构设计、状态机、关键决策记录
-  - `risk-table.md` — 实测频率安全参数与风控红线
-  - `scripts/` — 脱敏工程骨架（cdp 核心 / 采集 / 投喂 / 发布）
+  - `architecture.md` — 架构、状态机、关键决策
+  - `risk-table.md` — 实测频率参数与风控红线
+  - `scripts/` — 脱敏骨架（cdp 核心 / 采集 / 投喂 / 发布）
 
-## 实测沉淀的优势
+## 哪些坑是踩出来的
 
-- 全部工程决策来自真实长跑：老帖时间硬过滤（含跨年 MM-DD 修正）、广告卡识别（note_id 非 24 hex / 赞助角标）、URL 规范化（`/search_result/` → `/explore/` 防评论框打不开）、pending 超时防死锁、崩溃残留锁 10 分钟自动接管
-- 风控参数表全部实测：见 [references/risk-table.md](references/risk-table.md)
-- 无隐私：不含人设、账号、城市、路径、话术
+全部来自真实长跑，不是推演的：
+
+- 老帖按时间硬过滤，跨年的 MM-DD 要单独修正
+- 广告卡识别：note_id 不是 24 位 hex、带赞助角标
+- URL 规范化 `/search_result/` → `/explore/`，否则评论框打不开
+- pending 超时防死锁
+- 崩溃残留锁 10 分钟后自动接管
+
+频率参数也全是实测的，见 [references/risk-table.md](references/risk-table.md)。
+
+仓库里没有人设、账号、城市、路径、话术。
 
 ## 免责声明
 
